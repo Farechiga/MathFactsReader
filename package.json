@@ -1,0 +1,10 @@
+{
+  "name": "aussie-math-facts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tts": "node gen-tts.js",
+    "serve": "python3 -m http.server 8080"
+  }
+}
