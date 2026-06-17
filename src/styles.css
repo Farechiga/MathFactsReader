@@ -124,6 +124,30 @@ button:disabled {
   font-weight: 800;
 }
 
+.voice-control {
+  margin-top: 18px;
+}
+
+.voice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.voice-button {
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.64);
+  font-weight: 900;
+}
+
+.voice-button.active {
+  border-color: transparent;
+  color: white;
+  background: var(--green);
+}
+
 input[type="range"] {
   accent-color: var(--green);
 }

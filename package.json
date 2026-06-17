@@ -5,6 +5,21 @@
   "type": "module",
   "scripts": {
     "tts": "node gen-tts.js",
+    "tts:elevenlabs": "node gen-tts.js --provider elevenlabs",
+    "tts:tom": "node gen-tts.js --provider elevenlabs --elevenlabs-voice tom",
+    "tts:louise": "node gen-tts.js --provider elevenlabs --elevenlabs-voice louise",
+    "tts:tanmoy": "node gen-tts.js --provider elevenlabs --elevenlabs-voice tanmoy",
+    "tts:lilian": "node gen-tts.js --provider elevenlabs --elevenlabs-voice lilian",
+    "tts:drrosso": "node gen-tts.js --provider elevenlabs --elevenlabs-voice drrosso",
+    "tts:clay": "node gen-tts.js --provider elevenlabs --elevenlabs-voice clay",
+    "tts:savannah": "node gen-tts.js --provider elevenlabs --elevenlabs-voice savannah",
+    "tts:charlotte": "node gen-tts.js --provider elevenlabs --elevenlabs-voice charlotte",
+    "tts:waldeck": "node gen-tts.js --provider elevenlabs --elevenlabs-voice waldeck",
+    "tts:adeya": "node gen-tts.js --provider elevenlabs --elevenlabs-voice adeya",
+    "tts:cosimo": "node gen-tts.js --provider elevenlabs --elevenlabs-voice cosimo",
+    "tts:samara": "node gen-tts.js --provider elevenlabs --elevenlabs-voice samara",
+    "tts:callum": "node gen-tts.js --provider elevenlabs --elevenlabs-voice callum",
+    "tts:miri": "node gen-tts.js --provider elevenlabs --elevenlabs-voice miri",
     "serve": "python3 -m http.server 8080"
   }
 }

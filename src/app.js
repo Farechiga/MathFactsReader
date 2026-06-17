@@ -1,24 +1,90 @@
 import { FACTS, SETS } from "./facts.js";
 
+const VOICES = {
+  google: {
+    label: "Flynn",
+    manifest: "./audio/manifest.json"
+  },
+  tom: {
+    label: "Tom",
+    manifest: "./audio-elevenlabs/manifest.json"
+  },
+  louise: {
+    label: "Louise",
+    manifest: "./audio-elevenlabs-louise/manifest.json"
+  },
+  tanmoy: {
+    label: "Tanmoy",
+    manifest: "./audio-elevenlabs-tanmoy/manifest.json"
+  },
+  lilian: {
+    label: "Lilian",
+    manifest: "./audio-elevenlabs-lilian/manifest.json"
+  },
+  drrosso: {
+    label: "Dr. Rosso",
+    manifest: "./audio-elevenlabs-drrosso/manifest.json"
+  },
+  clay: {
+    label: "Clay",
+    manifest: "./audio-elevenlabs-clay/manifest.json"
+  },
+  savannah: {
+    label: "Savannah",
+    manifest: "./audio-elevenlabs-savannah/manifest.json"
+  },
+  charlotte: {
+    label: "Charlotte",
+    manifest: "./audio-elevenlabs-charlotte/manifest.json"
+  },
+  waldeck: {
+    label: "Waldeck",
+    manifest: "./audio-elevenlabs-waldeck/manifest.json"
+  },
+  adeya: {
+    label: "Adeya",
+    manifest: "./audio-elevenlabs-adeya/manifest.json"
+  },
+  cosimo: {
+    label: "Cosimo",
+    manifest: "./audio-elevenlabs-cosimo/manifest.json"
+  },
+  samara: {
+    label: "Samara",
+    manifest: "./audio-elevenlabs-samara/manifest.json"
+  },
+  callum: {
+    label: "Callum",
+    manifest: "./audio-elevenlabs-callum/manifest.json"
+  },
+  miri: {
+    label: "Miri",
+    manifest: "./audio-elevenlabs-miri/manifest.json"
+  }
+};
+const VOICE_KEYS = Object.keys(VOICES);
+
 const state = {
   mode: "random",
   set: null,
+  voice: readSavedVoice(),
   running: false,
   current: null,
   history: [],
   audio: null,
-  manifest: {},
+  manifests: {},
   pauseMs: 2800
 };
 
 const playButton = document.querySelector("#playButton");
 const pauseButton = document.querySelector("#pauseButton");
 const modeButtons = document.querySelector("#modeButtons");
+const voiceButtons = document.querySelector("#voiceButtons");
 const pauseRange = document.querySelector("#pauseRange");
 const pauseValue = document.querySelector("#pauseValue");
 
 setupControls();
-loadManifest();
+loadSelectedVoiceManifests();
 render();
 
 function setupControls() {
@@ -55,6 +121,18 @@ function setupControls() {
     if (state.running) playNext();
   });
 
+  voiceButtons.addEventListener("click", async (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+
+    state.voice = button.dataset.voice;
+    localStorage.setItem("mathFactsVoice", state.voice);
+    state.audio?.pause();
+    window.speechSynthesis?.cancel();
+    await loadSelectedVoiceManifests();
+    render();
+  });
+
   playButton.addEventListener("click", () => {
     state.running = true;
     playNext();
@@ -74,14 +152,25 @@ function setupControls() {
   });
 }
 
-async function loadManifest() {
+async function loadVoiceManifest(voiceKey) {
+  const voice = VOICES[voiceKey] || VOICES.google;
+
   try {
-    const response = await fetch("./audio/manifest.json", { cache: "no-store" });
+    const response = await fetch(voice.manifest, { cache: "no-store" });
     if (!response.ok) throw new Error("No audio manifest yet");
-    state.manifest = await response.json();
+    state.manifests[voiceKey] = await response.json();
   } catch {
-    state.manifest = {};
+    state.manifests[voiceKey] = {};
   }
+}
+
+async function loadSelectedVoiceManifests() {
+  if (state.voice === "random") {
+    await Promise.all(VOICE_KEYS.map((voiceKey) => loadVoiceManifest(voiceKey)));
+    return;
+  }
+
+  await loadVoiceManifest(state.voice);
 }
 
 function render() {
@@ -96,6 +185,9 @@ function render() {
     button.classList.toggle("active", isActive);
   });
 
+  document.querySelectorAll(".voice-button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.voice === state.voice);
+  });
 }
 
 async function playNext() {
@@ -148,10 +240,26 @@ function randomWeight(fact) {
   return Math.max(1, weight);
 }
 
-function speak(fact) {
-  const src = state.manifest[fact.id];
+async function speak(fact) {
+  const voiceKey = chooseVoiceKey();
+
+  if (!state.manifests[voiceKey]) {
+    await loadVoiceManifest(voiceKey);
+  }
+
+  const src = state.manifests[voiceKey]?.[fact.id];
   if (src) return playAudio(src);
   return speakWithBrowserVoice(fact.text);
+}
+
+function chooseVoiceKey() {
+  if (state.voice !== "random") return state.voice;
+  return VOICE_KEYS[Math.floor(Math.random() * VOICE_KEYS.length)];
+}
+
+function readSavedVoice() {
+  const savedVoice = localStorage.getItem("mathFactsVoice");
+  return savedVoice === "random" || VOICE_KEYS.includes(savedVoice) ? savedVoice : "google";
 }
 
 function playAudio(src) {
