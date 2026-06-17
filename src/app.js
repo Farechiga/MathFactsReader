@@ -49,10 +49,6 @@ const VOICES = {
     label: "Cosimo",
     manifest: "./audio-elevenlabs-cosimo/manifest.json"
   },
-  samara: {
-    label: "Samara",
-    manifest: "./audio-elevenlabs-samara/manifest.json"
-  },
   callum: {
     label: "Callum",
     manifest: "./audio-elevenlabs-callum/manifest.json"
@@ -249,12 +245,17 @@ async function speak(fact) {
 
   const src = state.manifests[voiceKey]?.[fact.id];
   if (src) return playAudio(src);
-  return speakWithBrowserVoice(fact.text);
+  return Promise.resolve();
 }
 
 function chooseVoiceKey() {
   if (state.voice !== "random") return state.voice;
-  return VOICE_KEYS[Math.floor(Math.random() * VOICE_KEYS.length)];
+  const availableVoices = VOICE_KEYS.filter((voiceKey) => {
+    return state.manifests[voiceKey]?.[state.current?.id];
+  });
+
+  if (availableVoices.length === 0) return VOICE_KEYS[0];
+  return availableVoices[Math.floor(Math.random() * availableVoices.length)];
 }
 
 function readSavedVoice() {
@@ -269,23 +270,5 @@ function playAudio(src) {
     state.audio.addEventListener("ended", resolve, { once: true });
     state.audio.addEventListener("error", resolve, { once: true });
     state.audio.play().catch(resolve);
-  });
-}
-
-function speakWithBrowserVoice(text) {
-  return new Promise((resolve) => {
-    if (!("speechSynthesis" in window)) {
-      resolve();
-      return;
-    }
-
-    speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-AU";
-    utterance.rate = 0.86;
-    utterance.pitch = 1.04;
-    utterance.onend = resolve;
-    utterance.onerror = resolve;
-    speechSynthesis.speak(utterance);
   });
 }
