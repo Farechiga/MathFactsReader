@@ -1,5 +1,6 @@
 import { FACTS, SETS } from "./facts.js";
 
+const VOICE_STORAGE_KEY = "mathFactsVoiceV2";
 const VOICES = {
   google: {
     label: "Flynn",
@@ -65,9 +66,10 @@ const state = {
   set: null,
   voice: readSavedVoice(),
   running: false,
+  loopActive: false,
   current: null,
   history: [],
-  audio: null,
+  audio: createAudioElement(),
   manifests: {},
   pauseMs: 2800
 };
@@ -114,7 +116,7 @@ function setupControls() {
 
     state.history = [];
     render();
-    if (state.running) playNext();
+    if (state.running) startPlaybackLoop();
   });
 
   voiceButtons.addEventListener("click", async (event) => {
@@ -122,7 +124,7 @@ function setupControls() {
     if (!button) return;
 
     state.voice = button.dataset.voice;
-    localStorage.setItem("mathFactsVoice", state.voice);
+    localStorage.setItem(VOICE_STORAGE_KEY, state.voice);
     state.audio?.pause();
     window.speechSynthesis?.cancel();
     await loadSelectedVoiceManifests();
@@ -131,8 +133,8 @@ function setupControls() {
 
   playButton.addEventListener("click", () => {
     state.running = true;
-    playNext();
     render();
+    startPlaybackLoop();
   });
 
   pauseButton.addEventListener("click", () => {
@@ -186,20 +188,25 @@ function render() {
   });
 }
 
-async function playNext() {
-  if (!state.running) return;
+async function startPlaybackLoop() {
+  if (state.loopActive) return;
+  state.loopActive = true;
 
-  const fact = chooseFact();
-  state.current = fact;
-  state.history.push(fact.id);
-  state.history = state.history.slice(-10);
-  render();
+  while (state.running) {
+    const fact = chooseFact();
+    state.current = fact;
+    state.history.push(fact.id);
+    state.history = state.history.slice(-10);
+    render();
 
-  await speak(fact);
+    await speak(fact);
 
-  window.setTimeout(() => {
-    if (state.running) playNext();
-  }, state.pauseMs);
+    if (state.running) {
+      await sleep(state.pauseMs);
+    }
+  }
+
+  state.loopActive = false;
 }
 
 function chooseFact() {
@@ -259,16 +266,40 @@ function chooseVoiceKey() {
 }
 
 function readSavedVoice() {
-  const savedVoice = localStorage.getItem("mathFactsVoice");
-  return savedVoice === "random" || VOICE_KEYS.includes(savedVoice) ? savedVoice : "google";
+  const savedVoice = localStorage.getItem(VOICE_STORAGE_KEY);
+  return savedVoice === "random" || VOICE_KEYS.includes(savedVoice) ? savedVoice : "tom";
 }
 
 function playAudio(src) {
   return new Promise((resolve) => {
-    state.audio?.pause();
-    state.audio = new Audio(src);
-    state.audio.addEventListener("ended", resolve, { once: true });
-    state.audio.addEventListener("error", resolve, { once: true });
-    state.audio.play().catch(resolve);
+    const audio = state.audio;
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      audio.removeEventListener("ended", finish);
+      audio.removeEventListener("error", finish);
+      audio.removeEventListener("pause", finish);
+      resolve();
+    };
+
+    audio.pause();
+    audio.src = src;
+    audio.load();
+    audio.addEventListener("ended", finish);
+    audio.addEventListener("error", finish);
+    audio.addEventListener("pause", finish);
+    audio.play().catch(finish);
   });
+}
+
+function createAudioElement() {
+  const audio = new Audio();
+  audio.preload = "auto";
+  audio.setAttribute("playsinline", "");
+  return audio;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
